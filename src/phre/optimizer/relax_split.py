@@ -114,6 +114,8 @@ class RelaxSplit:
         # initialization
         if init_x is None:
             init_x = np.zeros(self.image_size)
+        else:
+            init_x = init_x.copy()
 
         if init_x.size != self.image_size:
             raise ValueError(
@@ -123,6 +125,8 @@ class RelaxSplit:
 
         if init_w is None:
             init_w = self.obs.copy()
+        else:
+            init_w = init_w.copy()
 
         if init_w.size != self.num_obs:
             raise ValueError(
