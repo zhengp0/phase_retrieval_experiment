@@ -32,6 +32,8 @@ class RelaxSplit:
         self.num_obs = self.obs_mat.shape[0]
         self.image_size = self.obs_mat.shape[1]
 
+        self._cached_mat = self.obs_mat.T.dot(self.obs_mat)
+
     def phase_retrieval(self,
                         init_x: Union[np.ndarray, None] = None,
                         init_w: Union[np.ndarray, None] = None,
@@ -145,8 +147,7 @@ class RelaxSplit:
         Returns:
             np.ndarray: Optimal image vector based on `w`.
         """
-        return np.linalg.solve(self.obs_mat.T.dot(self.obs_mat),
-                               self.obs_mat.T.dot(w))
+        return np.linalg.solve(self._cached_mat, self.obs_mat.T.dot(w))
 
     def step_w(self, x: np.ndarray) -> np.ndarray:
         """Optimization w step.
