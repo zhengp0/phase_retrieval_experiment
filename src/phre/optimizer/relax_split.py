@@ -5,42 +5,38 @@
 from typing import Tuple, Union
 import numpy as np
 from phre.utils import distance
+from .optimizer import Optimizer
 
 
-class RelaxSplit:
+class RelaxSplit(Optimizer):
     """Relax and split optimizer.
     """
 
     def __init__(self,
                  obs_mat: np.ndarray,
                  obs: np.ndarray,
+                 obj_type: str = 'soft',
                  nu: float = 1.0):
         """Constructor of relax and split solver.
 
         Args:
-            obs_mat (np.ndarray):
-                Observation mapping, from original image to observation.
-            obs (np.ndarray): Observations.
             nu (float, optional):
                 Hyper-parameter of relax and split solver, controls how close
                 to the original (before relax) formulation. The smaller the `nu`
                 the closer to the original problem. Defaults to 1.0.
         """
-        self.obs_mat = obs_mat
-        self.obs = obs
+        super().__init__(obs_mat, obs, obj_type=obj_type)
         self.nu = nu
-
-        self.num_obs = self.obs_mat.shape[0]
-        self.image_size = self.obs_mat.shape[1]
-
         self._cached_mat = self.obs_mat.T.dot(self.obs_mat)
+        self.default_fit_options = dict(
+            init_x=None,
+            init_w=None,
+            tol=1e-6,
+            max_iter=100,
+            verbose=False
+        )
 
-    def phase_retrieval(self,
-                        init_x: Union[np.ndarray, None] = None,
-                        init_w: Union[np.ndarray, None] = None,
-                        tol: float = 1e-6,
-                        max_iter: int = 100,
-                        verbose: bool = False) -> np.ndarray:
+    def phase_retrieval(self, **fit_options) -> np.ndarray:
         """Phase retrieval algorithm.
 
         Args:
@@ -61,9 +57,11 @@ class RelaxSplit:
         Returns:
             np.ndarray: Final result.
         """
-        x, w = self.initialize_vars(init_x=init_x, init_w=init_w)
+        fit_options = {**self.default_fit_options, **fit_options}
+        x, w = self.initialize_vars(init_x=fit_options['init_x'],
+                                    init_w=fit_options['init_w'])
 
-        for iter_counter in range(1, max_iter + 1):
+        for iter_counter in range(1, fit_options['max_iter'] + 1):
             x_new = self.step_x(w)
             w_new = self.step_w(x_new)
 
@@ -73,11 +71,11 @@ class RelaxSplit:
             np.copyto(x, x_new)
             np.copyto(w, w_new)
 
-            if verbose:
+            if fit_options['verbose']:
                 obj = self.objective(x, w)
                 print(f"iter {iter_counter:5}, obj {obj: .2e}, err {err:.2e}")
 
-            if err < tol:
+            if err < fit_options['tol']:
                 break
 
         return x
@@ -160,16 +158,8 @@ class RelaxSplit:
             np.ndarray: Optimal pseudo observation vector.
         """
         v = self.obs_mat.dot(x)
-        sign_v = np.sign(v)
-        v *= sign_v
-
-        w = self.obs.copy()
-        r_index = v > self.obs + self.nu
-        l_index = v < self.obs - self.nu
-
-        w[r_index] = v[r_index] - self.nu
-        w[l_index] = v[l_index] + self.nu
-
-        w *= sign_v
-
+        if self.obj_type == 'soft':
+            w = self._soft_prox(v, self.nu)
+        else:
+            w = self._hard_prox(v)
         return w
