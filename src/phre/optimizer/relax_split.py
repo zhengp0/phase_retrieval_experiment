@@ -72,28 +72,13 @@ class RelaxSplit(Optimizer):
             np.copyto(w, w_new)
 
             if fit_options['verbose']:
-                obj = self.objective(x, w)
+                obj = self.objective(x)
                 print(f"iter {iter_counter:5}, obj {obj: .2e}, err {err:.2e}")
 
             if err < fit_options['tol']:
                 break
 
         return x
-
-    def objective(self, x: np.ndarray, w: np.ndarray) -> float:
-        """Objective function value.
-
-        Args:
-            x (np.ndarray): Image variable.
-            w (np.ndarray): Pseudo observation variable.
-
-        Returns:
-            float: Objective function value.
-        """
-        v = self.obs_mat.dot(x)
-        val = np.sum(np.abs(np.abs(w) - self.obs))
-        val += 0.5*np.sum((v - w)**2)/self.nu
-        return val
 
     def initialize_vars(self,
                         init_x: Union[np.ndarray, None] = None,

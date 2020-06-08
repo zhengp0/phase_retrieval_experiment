@@ -81,30 +81,15 @@ class ADMM(Optimizer):
             np.copyto(d, d_new)
 
             if fit_options['verbose']:
-                obj = self.objective(x, w, d)
-                print(f"iter {iter_counter:5}, obj {obj: .2e}, err {err:.2e}")
+                obj = self.objective(x)
+                primal_feas = np.linalg.norm(self.obs_mat.dot(x) - w)
+                print(f"iter {iter_counter:5}, obj {obj: .2e}, err {err:.2e}, "
+                      f"primal_feas {primal_feas:.2e}")
 
             if err < fit_options['tol']:
                 break
 
         return x
-
-    def objective(self, x: np.ndarray, w: np.ndarray, d: np.ndarray) -> float:
-        """Lagrangian objective function
-
-        Args:
-            x (np.ndarray): Image vector.
-            w (np.ndarray): Pesudo image obersvation vector.
-            d (np.ndarray): Dual variable.
-
-        Returns:
-            float: Lagrangian objective value.
-        """
-        v = self.obs_mat.dot(x)
-        val = np.sum(np.abs(np.abs(w) - self.obs))
-        val += 0.5*self.rho*np.sum((v - w)**2)
-        val += self.rho*d.dot(v - w)
-        return val
 
     def initialize_vars(self,
                         init_x: Union[np.ndarray, None] = None,

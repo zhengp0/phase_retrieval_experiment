@@ -82,3 +82,14 @@ class Optimizer:
         w = self.obs.copy()
         w *= sign_v
         return w
+
+    def objective(self, x: np.ndarray) -> float:
+        """Objective function value.
+
+        Args:
+            x (np.ndarray): Image variable.
+
+        Returns:
+            float: Objective function value.
+        """
+        return np.sum(np.abs(np.abs(self.obs_mat.dot(x)) - self.obs))
