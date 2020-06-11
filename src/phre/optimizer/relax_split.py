@@ -57,6 +57,7 @@ class RelaxSplit(Optimizer):
         Returns:
             np.ndarray: Final result.
         """
+        self.reset_solver_info()
         fit_options = {**self.default_fit_options, **fit_options}
         x, w = self.initialize_vars(init_x=fit_options['init_x'],
                                     init_w=fit_options['init_w'])
@@ -67,12 +68,14 @@ class RelaxSplit(Optimizer):
 
             err = distance((x, w), (x_new, w_new),
                            rel=True, check_inputs=False)
+            obj = self.objective(x_new)
 
             np.copyto(x, x_new)
             np.copyto(w, w_new)
 
+            self.record_solver_info(obj=obj, err=err)
+
             if fit_options['verbose']:
-                obj = self.objective(x)
                 print(f"iter {iter_counter:5}, obj {obj: .2e}, err {err:.2e}")
 
             if err < fit_options['tol']:

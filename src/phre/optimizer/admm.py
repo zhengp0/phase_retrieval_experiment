@@ -63,6 +63,7 @@ class ADMM(Optimizer):
         Returns:
             np.ndarray: Final result.
         """
+        self.reset_solver_info()
         fit_options = {**self.default_fit_options, **fit_options}
         x, w, d = self.initialize_vars(init_x=fit_options['init_x'],
                                        init_w=fit_options['init_w'],
@@ -75,13 +76,15 @@ class ADMM(Optimizer):
 
             err = distance((x, w, d), (x_new, w_new, d_new),
                            rel=True, check_inputs=False)
+            obj = self.objective(x_new)
 
             np.copyto(x, x_new)
             np.copyto(w, w_new)
             np.copyto(d, d_new)
 
+            self.record_solver_info(obj=obj, err=err)
+
             if fit_options['verbose']:
-                obj = self.objective(x)
                 primal_feas = np.linalg.norm(self.obs_mat.dot(x) - w)
                 print(f"iter {iter_counter:5}, obj {obj: .2e}, err {err:.2e}, "
                       f"primal_feas {primal_feas:.2e}")
